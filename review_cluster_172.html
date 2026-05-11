@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>超导比热计算 · Workflow Browser</title>
+<style>
+:root{--bg:#fafaf5;--card:#fff;--border:#e7e5dc;--text:#1f2937;--muted:#6b7280;--accent:#2f6b5e;--chip:#eef2f1;--hi:#fff6d1;--step:#dbe8df;--method:#e7dde8;--ref:#e8e1d3;--tool:#d8e4e0;--param:#f0e8d8;--pitfall:#f5ddd8}
+*{box-sizing:border-box}
+.math{font-family:"Cambria Math","Times New Roman",serif;font-style:italic;color:#1a3a32}
+.display-math{display:block;text-align:center;margin:10px 0;font-family:"Cambria Math","Times New Roman",serif;font-style:italic;font-size:15px;color:#1a3a32}
+.frac{font-size:13px}
+
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 120px}
+.eyebrow{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:var(--chip);padding:4px 10px;border-radius:20px}
+h1{font-size:30px;font-weight:700;margin:12px 0 6px;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:0 0 24px;font-size:14px}
+h2{font-size:18px;font-weight:600;margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h2 .n{color:var(--muted);font-weight:400;margin-left:6px;font-size:13px}
+h3{font-size:15px;font-weight:600;margin:0 0 6px}
+h4{font-size:14px;font-weight:600;margin:0}
+
+.sw{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 78%,rgba(250,250,245,0));padding:14px 0 10px}
+.sb{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+#q{flex:1;border:0;outline:0;background:transparent;font-size:15px;color:var(--text);font-family:inherit}
+.sg{cursor:pointer;border:1px solid var(--border);background:var(--card);font-size:12px;color:var(--text);padding:5px 10px;border-radius:16px;font-family:inherit;margin:6px 6px 0 0;transition:all .15s}
+.sg:hover{border-color:var(--accent);color:var(--accent)}
+#ans{margin-top:12px}
+.ans{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:16px 20px;margin-bottom:10px;animation:f .2s ease}
+.ans .qq{font-weight:600;margin-bottom:8px;color:var(--accent)}
+.empty{color:var(--muted);font-size:13.5px;padding:12px 2px}
+@keyframes f{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:10px;transition:all .25s}
+.card.flash{background:var(--hi);border-color:var(--accent)}
+.card .hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.card .hd .idx{color:var(--muted);font-size:12px;font-family:ui-monospace,Menlo,monospace;font-weight:500}
+.desc{color:var(--text);font-size:14px;line-height:1.82;margin-top:6px}
+.field{margin-top:14px;padding:12px 14px;border-radius:8px;font-size:13.5px;line-height:1.78}
+.field.tools{background:var(--tool);border-left:3px solid #2f6b5e}
+.field.params{background:var(--param);border-left:3px solid #b8942e}
+.field.pitfalls{background:var(--pitfall);border-left:3px solid #b95a4a}
+.field.case{background:#e8eef5;border-left:3px solid #4a6fa5}
+.field h4{font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;color:var(--muted)}
+.field ul{margin:0;padding-left:18px}
+.field li{margin-bottom:4px}
+
+.badges{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.badge{text-decoration:none;color:var(--text);font-size:11px;padding:3px 8px;border-radius:10px;font-family:ui-monospace,Menlo,monospace;cursor:pointer;transition:transform .15s;display:inline-block}
+.badge:hover{transform:translateY(-1px)}
+.badge.step{background:var(--step)}.badge.method{background:var(--method)}.badge.ref{background:var(--ref)}.badge.claim{background:var(--chip)}
+
+details{margin-bottom:4px}
+summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px;user-select:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸";color:var(--accent);font-size:12px;transition:transform .2s}
+details[open] summary::before{content:"▾"}
+
+.tree-wrap{border:1px solid var(--border);border-radius:10px;padding:20px;margin:12px 0;overflow-x:auto}
+.tree-wrap svg{display:block;margin:0 auto}
+.flow-box{fill:var(--card);stroke:#b0b8a0;stroke-width:1.2;rx:10;ry:10}
+.flow-label{font-size:12px;fill:var(--text);font-family:-apple-system,"PingFang SC",sans-serif;text-anchor:middle}
+.flow-arrow{stroke:var(--muted);stroke-width:1.2;fill:none;marker-end:url(#arrow)}
+.flow-branch-label{font-size:11px;fill:var(--accent);font-family:-apple-system,"PingFang SC",sans-serif;font-style:italic}
+
+.refs{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr;gap:6px}
+@media(min-width:720px){.refs{grid-template-columns:1fr 1fr}}
+.refs li{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px}
+.refs li .cite{font-weight:500}
+.refs li .note{display:block;color:var(--muted);font-size:12px;margin-top:4px;line-height:1.55}
+
+.claims-grid{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 0}
+.claims-grid .c{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13.5px;line-height:1.65}
+.claims-grid .c .cid{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--accent);margin-right:6px}
+
+.method-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;border-left:3px solid var(--method)}
+.method-card h4{font-size:14px;margin:0 0 4px}
+.meta{font-size:12px;color:var(--muted);margin-top:4px}
+.meta strong{color:var(--text)}
+
+.loading{color:var(--muted);padding:40px 0;text-align:center}
+#err{color:#b91c1c;margin-top:20px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="eyebrow" id="tag">loading…</span>
+  <h1 id="wfName">…</h1>
+  <p class="lede" id="wfScope"></p>
+
+  <div class="sw">
+    <div class="sb">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" placeholder="问点什么（点击下方建议，或输入关键词如 BCS、E0、T²）" autocomplete="off">
+    </div>
+    <div id="sg"></div>
+    <div id="ans"></div>
+  </div>
+
+  <h2>Workflow 总览</h2>
+  <div class="card" id="wfCard">
+    <div class="desc" id="wfDesc"></div>
+  </div>
+
+  <h2>决策树</h2>
+  <div class="tree-wrap" id="tree"></div>
+
+  <h2>结论<span class="n" id="cc"></span></h2>
+  <div class="claims-grid" id="claims"></div>
+
+  <details><summary>开放问题</summary><div class="desc" id="wfOpen" style="padding:8px 0"></div></details>
+
+  <h2>Steps<span class="n" id="cS"></span></h2>
+  <div id="steps"></div>
+
+  <h2>Methods<span class="n" id="cM"></span></h2>
+  <div id="methods"></div>
+
+  <h2>References<span class="n" id="cR"></span></h2>
+  <details><summary id="refSum">展开</summary><ul class="refs" id="refs"></ul></details>
+
+  <div id="err"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null){if(typeof x==='string')e.innerHTML=x;else if(Array.isArray(x)){x.forEach(c=>e.append(c))}else if(Array.isArray(x)){x.forEach(c=>e.append(c))}else e.append(x)}}return e};
+
+function md(s){
+  if(!s)return '';
+  let h=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/\n- /g,'\n<li>');
+  h=h.replace(/^-(.+)$/gm,'<li>$1</li>');
+  h=h.replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>');
+  h=h.replace(/\n/g,'<br>');
+  return h;
+}
+function kind(id){return id.startsWith('step_')?'step':id.startsWith('method_')?'method':id.startsWith('ref')?'ref':id.startsWith('c')?'claim':'step'}
+function badge(id,lbl){
+  const a=el('a','badge '+kind(id),lbl||id);a.href='#'+id;
+  a.onclick=e=>{e.preventDefault();const n=$(id);if(!n)return;n.scrollIntoView({behavior:'smooth',block:'center'});n.classList.add('flash');setTimeout(()=>n.classList.remove('flash'),2000)};
+  return a;
+}
+function fieldBox(title,content,cls){
+  if(!content)return null;
+  return el('div','field '+cls,[el('h4','',title),el('div','',md(content))]);
+}
+
+// Decision tree SVG
+function drawTree(){
+  const w=840,h=620;
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  svg.setAttribute('width','100%');svg.setAttribute('style','max-width:840px');
+  const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML='<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#6b7280"/></marker>';
+  svg.append(defs);
+  function box(x,y,w,txt,fill){
+    const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x',x-w/2);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',36);r.setAttribute('rx',10);r.setAttribute('ry',10);r.setAttribute('fill',fill||'#fff');r.setAttribute('stroke','#b0b8a0');r.setAttribute('stroke-width',1.2);
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x);t.setAttribute('y',y+23);t.setAttribute('text-anchor','middle');
+    t.setAttribute('style','font-size:12px;fill:#1f2937;font-family:-apple-system,"PingFang SC",sans-serif');
+    t.textContent=txt;
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.append(r,t);return g;
+  }
+  function arrow(x1,y1,x2,y2){
+    const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('stroke','#6b7280');l.setAttribute('stroke-width',1.2);l.setAttribute('marker-end','url(#arrow)');
+    return l;
+  }
+  function lbl(x,y,txt){
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('text-anchor','middle');
+    t.setAttribute('style','font-size:11px;fill:#2f6b5e;font-family:-apple-system,"PingFang SC",sans-serif;font-style:italic');
+    t.textContent=txt;return t;
+  }
+
+  // Root
+  svg.append(box(w/2,40,280,'输入起点选择', '#e6f0ec'));
+  // Level 1 branches
+  svg.append(arrow(w/2,76,w/2-200,100));
+  svg.append(arrow(w/2,76,w/2,100));
+  svg.append(arrow(w/2,76,w/2+200,100));
+  svg.append(lbl(w/2-100,95,'微观哈密顿量'));
+  svg.append(lbl(w/2+100,95,'实验/数值拟合'));
+  svg.append(box(w/2-200,100,220,'BdG / BCS 平均场'));
+  svg.append(box(w/2,100,190,'实验拟合/数值模拟'));
+  svg.append(box(w/2+200,100,220,'有效场论/自由能泛函'));
+  // Level 2
+  svg.append(arrow(w/2-200,136,w/2-270,180));
+  svg.append(arrow(w/2-200,136,w/2-130,180));
+  svg.append(arrow(w/2,136,w/2-70,180));
+  svg.append(arrow(w/2,136,w/2+70,180));
+  svg.append(arrow(w/2+200,136,w/2+200,180));
+  svg.append(lbl(w/2-230,165,'直接求和/积分'));
+  svg.append(lbl(w/2-160,165,'DOS 构建'));
+  svg.append(box(w/2-270,180,120,'能谱 → DOS'));
+  svg.append(box(w/2-130,180,120,'DOS N(E)?'));
+  svg.append(box(w/2-70,180,140,'能隙 Δ(T)?'));
+  svg.append(box(w/2+70,180,140,'N(E) 源?'));
+  svg.append(box(w/2+200,180,140,'泛函 F[Δ]'));
+  // Level 3 - converge to step 2
+  svg.append(arrow(w/2-270,216,w/2,270));
+  svg.append(arrow(w/2-130,216,w/2,270));
+  svg.append(arrow(w/2-70,216,w/2,270));
+  svg.append(arrow(w/2+70,216,w/2,270));
+  svg.append(arrow(w/2+200,216,w/2,270));
+  svg.append(lbl(w/2-100,250,'殊途同归'));
+  svg.append(box(w/2,270,240,'Step 2: 构建热力学势/熵','#e6f0ec'));
+  // Step 3
+  svg.append(arrow(w/2,306,w/2,340));
+  svg.append(box(w/2,340,280,'Step 3: 热力学求导 → C(T)', '#e6f0ec'));
+  svg.append(lbl(w/2+170,335,'C=T dS/dT, -T d²F/dT²'));
+  // Step 4
+  svg.append(arrow(w/2,376,w/2,410));
+  svg.append(box(w/2,410,320,'Step 4: 极限评估与特征量', '#e6f0ec'));
+  svg.append(lbl(w/2+190,405,'ΔC, γ, T² 幂律, 分段标度'));
+  // Output
+  svg.append(arrow(w/2,446,w/2,490));
+  svg.append(box(w/2,490,260,'输出：配对对称性判据', '#fff6d1'));
+  // Legend
+  svg.append(box(w-120,500,80,'路线', '#e6f0ec'));
+  svg.append(box(w-120,540,80,'判据', '#fff6d1'));
+
+  $('tree').append(svg);
+}
+
+Promise.all([
+  fetch('./review_cluster_172.json').then(r=>r.json()),
+  fetch('./review_cluster_172.qa.json').then(r=>r.json())
+]).then(([D,QA])=>{
+  $('tag').textContent=`${D.workflow.id} · ${D.paper_refs.length} papers · ${D.steps.length} steps · ${D.methods.length} methods`;
+  $('wfName').textContent=D.workflow.name;
+  $('wfScope').textContent=`基于 ${D.workflow.member_paper_ids.length} 篇聚类文献提炼的可复用工作流`;
+  $('wfDesc').innerHTML=md(D.workflow.description);
+  $('wfOpen').innerHTML=md(D.workflow.open_issues||'');
+  $('cS').textContent='· '+D.steps.length;
+  $('cM').textContent='· '+D.methods.length;
+  $('cR').textContent='· '+D.paper_refs.length;
+  $('refSum').textContent='展开 '+D.paper_refs.length+' 篇 cluster 成员';
+
+  // Claims
+  const claims=D.workflow.claims||[];
+  $('cc').textContent='· '+claims.length;
+  claims.forEach(c=>{
+    const div=el('div','c');div.id=c.id;
+    div.innerHTML='<span class="cid">'+c.id+'</span>'+md(c.text);
+    $('claims').append(div);
+  });
+
+  // Decision tree
+  drawTree();
+
+  // Steps
+  D.steps.forEach((s,i)=>{
+    // Step card
+    const card=el('div','card');card.id=s.id;
+    const hd=el('div','hd');
+    hd.innerHTML=`<span class="idx">${(i+1).toString().padStart(2,'0')}</span><h3>${s.name}</h3>`;
+    card.append(hd);
+    card.append(el('div','desc',md(s.description)));
+
+    // Substeps
+    if(s.substeps&&s.substeps.length){
+      s.substeps.forEach(ss=>{
+        const det=el('details','');det.style.marginLeft='12px';
+        det.innerHTML=`<summary>${ss.name}</summary><div class="desc" style="margin:6px 0 0 20px;font-size:13.5px">${md(ss.description)}</div>`;
+        card.append(det);
+      });
+    }
+
+    // Step-level fields
+    const fb=fieldBox('推荐工具',s.recommended_tools,'tools');
+    if(fb)card.append(fb);
+    const fp=fieldBox('关键参数',s.key_parameters,'params');
+    if(fp)card.append(fp);
+    const ff=fieldBox('常见陷阱',s.common_pitfalls,'pitfalls');
+    if(ff)card.append(ff);
+    const fc=fieldBox('案例',s.case_study,'case');
+    if(fc)card.append(fc);
+
+    const bg=el('div','badges');
+    s.method_ids.forEach(m=>bg.append(badge(m)));
+    s.paper_ref_ids.forEach(r=>bg.append(badge(r)));
+    card.append(bg);
+    $('steps').append(card);
+  });
+
+  // Methods
+  D.methods.forEach(m=>{
+    const card=el('div','card method-card');card.id=m.id;
+    card.append(el('h4','',m.name));
+    card.append(el('span','badge method',m.id));
+    card.append(el('div','desc',md(m.description)));
+    if(m.assumptions)card.append(el('div','meta','<strong>假设</strong> '+md(m.assumptions)));
+    if(m.applicability)card.append(el('div','meta','<strong>适用</strong> '+md(m.applicability)));
+    if(m.relationship)card.append(el('div','meta','<strong>关联</strong> '+md(m.relationship)));
+    const bg=el('div','badges');
+    m.paper_ref_ids.forEach(r=>bg.append(badge(r)));
+    card.append(bg);
+    $('methods').append(card);
+  });
+
+  // Refs
+  D.paper_refs.forEach(r=>{
+    const li=el('li','');li.id=r.id;
+    li.innerHTML=`<span class="cite">${r.citation}</span>${r.description?`<span class="note">${r.description}</span>`:''}`;
+    $('refs').append(li);
+  });
+
+  // Q&A
+  QA.forEach(item=>{
+    const b=el('button','sg',item.q);
+    b.onclick=()=>{$('q').value=item.q;search(QA)};
+    $('sg').append(b);
+  });
+  $('q').addEventListener('input',()=>search(QA));
+
+  // KaTeX render
+  renderLatex(document.body);
+
+}).catch(e=>{$('err').textContent='加载失败：'+e.message});
+
+function search(QA){
+  const raw=$('q').value.trim(),ans=$('ans');ans.innerHTML='';
+  if(!raw)return;
+  const kw=raw.toLowerCase().split(/[\s,.?？，。]+/).filter(Boolean);
+  const m=QA.filter(i=>{const h=(i.q+' '+i.a+' '+i.tags.join(' ')).toLowerCase();return kw.every(k=>h.includes(k))||kw.some(k=>i.q.toLowerCase().includes(k))});
+  if(!m.length){ans.append(el('div','empty','没有匹配的预生成答案。试试点击上方建议问题，或换个关键词（如 BCS、Cs(T)、E0、T²、节点）。'));return}
+  m.forEach(i=>{
+    const c=el('div','ans');c.append(el('div','qq',i.q));
+    c.append(el('div','',md(i.a)));
+    const tg=el('div','badges');i.tags.forEach(t=>tg.append(badge(t,t==='workflow'?'workflow':t)));
+    c.append(tg);ans.append(c);
+    renderLatex(c);
+  });
+}
+</script>
+</body>
+</html>

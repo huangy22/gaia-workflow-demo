@@ -1,0 +1,397 @@
+{
+  "workflow": {
+    "id": "cluster_172",
+    "name": "超导比热计算",
+    "description": "本 workflow 聚合 17 篇代表性文献，梳理从微观输入到热力学观测量的超导比热计算流程。核心分四步：构造谱/DOS/自由能输入；由费米-狄拉克熵积分构建热力学势/熵；温度求导得比热曲线；在低温/Tc/外场极限下提取特征量（ΔC、Sommerfeld 系数 γ、低温幂律）。适用于 BCS 弱耦合、强耦合、多轨道、拓扑超导以及各向异性（含点/线节点）、多带、杂质与磁场背景下的比热计算。方法分支包括 BCS 平均场直接求和、Bogoliubov-de Gennes 谱、格林函数路线、准经典（Eilenberger/LO）、以及以自由能泛函或有效场论为中心的温度导数路线。",
+    "step_ids": [
+      "step_input",
+      "step_thermo",
+      "step_deriv",
+      "step_limit"
+    ],
+    "member_paper_ids": [
+      "ref1",
+      "ref2",
+      "ref3",
+      "ref4",
+      "ref5",
+      "ref6",
+      "ref7",
+      "ref8",
+      "ref9",
+      "ref10",
+      "ref11",
+      "ref12",
+      "ref13",
+      "ref14",
+      "ref15",
+      "ref16",
+      "ref17"
+    ],
+    "conclusions": "1) 比热跃迁与配对对称性挂钩：A 相 ΔC/C ≃ 0.93，B 相 ≃ 1.20。2) 点节点导致低温比热幂律 Cs ∝ T² (T≪Tc)，可作为节点类型判据，区别于全能隙的指数激活律 ∼ e^(-Δ/T)。3) 弱耦合下 Tc = (2γ/π) E0 e^(-1/λ) = 1.136 E0 e^(-1/λ)，连接微观耦合常数 λ 与宏观 Tc。4) 多分量序参量可出现两个相变温度 Tc 与 Tc1，对应 C(T) 两次跳变；当 Δ1 与 Δ2 同时非零时 dx²-y² + idxy 混合态可变为无节点，低温由幂律转指数抑制。5) 引入杂质展宽 γ0 与磁场能标 EH 后比热分段标度：T ≪ max(γ0,EH) ≪ Δ0 时 C ≃ (π²/3) N(0;H) T 呈线性；γ0,EH ≪ T ≪ Δ0 时 C ≃ N0 (9ζ(3)/2) T² 呈幂律。",
+    "open_issues": "两次跃迁的具体跳变幅度、d+id 混合态的指数衰减系数等关键数值在现有工作流摘录中缺失；跨实现的标准化描述（输入输出规范、误差传播、参数拟合策略）尚未建立，不利于跨材料跨方法的系统比较。",
+    "claims": [
+      {
+        "id": "c1",
+        "text": "比热跃迁与配对对称性挂钩：A 相 $\\Delta C/C \\simeq 0.93$，B 相 $\\simeq 1.20$。"
+      },
+      {
+        "id": "c2",
+        "text": "点节点导致低温比热幂律 $C_s \\propto T^2$（$T \\ll T_c$），可作为节点类型判据，区别于全能隙指数激活律 $\\sim e^{-\\Delta/T}$。"
+      },
+      {
+        "id": "c3",
+        "text": "弱耦合下 $T_c = \\frac{2\\gamma}{\\pi} E_0 e^{-1/\\lambda} = 1.136\\,E_0\\,e^{-1/\\lambda}$，连接微观耦合常数 $\\lambda$ 与宏观 $T_c$。"
+      },
+      {
+        "id": "c4",
+        "text": "多分量序参量可出现两个相变温度 $T_c$ 与 $T_{c1}$，对应 $C(T)$ 两次跳变；$d_{x^2-y^2}+id_{xy}$ 混合态可变为无节点（全能隙），低温由幂律转指数抑制。"
+      },
+      {
+        "id": "c5",
+        "text": "杂质展宽 $\\gamma_0$ 与磁场能标 $E_H$ 下比热分段标度：$T\\ll\\max(\\gamma_0,E_H)\\ll\\Delta_0$ 时 $C\\simeq\\frac{\\pi^2}{3}N(0;H)T$（线性）；$\\gamma_0,E_H\\ll T\\ll\\Delta_0$ 时 $C\\simeq N_0\\frac{9\\zeta(3)}{2}T^2$（幂律）。"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "step_input",
+      "name": "谱/DOS/自由能输入构造",
+      "description": "为后续热力学量（熵、比热、自由能差等）的计算提供自洽的谱学/热力学输入：准粒子能谱 $E_k$、态密度 $N(E)$，或热力学势/自由能 $F$。",
+      "substeps": [
+        {
+          "name": "由 DOS 构造热力学输入",
+          "description": "以 $N(E)$ 为核心输入，给定 $f_{FD}(E,T)=1/(e^{E/k_B T}+1)$，构建 $S_s(T)=-4\\int_0^\\infty dE\\,N(E)[f_{FD}\\ln f_{FD}+(1-f_{FD})\\ln(1-f_{FD})]$，再由 $C_s(T)=T\\partial S_s/\\partial T$ 得比热并以 $\\gamma_{ST}$ 归一化。式 (1)–(5)。"
+        },
+        {
+          "name": "各向异性能隙与低能 DOS",
+          "description": "各向异性超导（含点/线节点）的能隙角向结构决定低能 $N(E)$ 幂律行为，从而决定低温 $C_s(T)\\propto T^2$（$T\\ll T_c$），式 (6)。此关系常被用作检验所输入/自洽得到的 $N(E)$ 是否与设定的节点结构一致。"
+        },
+        {
+          "name": "自洽能隙求解支撑 DOS",
+          "description": "$N(E)$ 非完全经验输入，在许多实现中由自洽 $\\Delta(T)$ 及角向形式 $f(\\hat{k})$ 确定。$\\Delta(T)=\\lambda\\int_0^{E_0} d\\xi\\,\\langle K(\\xi,\\Delta f(\\hat{k}),T)\\rangle_{\\hat{k}}$，式 (7)。得到 $\\Delta(T)$ 后 $E_k$ 与 $N(E)$ 按所选模型计算并回代形成闭环。"
+        }
+      ],
+      "method_ids": [
+        "method_selfconsistent_gap",
+        "method_bcs_mft"
+      ],
+      "paper_ref_ids": [
+        "ref6"
+      ],
+      "recommended_tools": "- **数值积分器**（自编或通用库）：计算能量积分 $\\int_0^\\infty dE$ 与角向平均 $\\langle\\cdot\\rangle_{\\hat{k}}$\n  - 建议自适应 Gauss–Kronrod 或高精度 Simpson\n  - 参考：SciPy `quad`、MATLAB `integral`、Julia `QuadGK`\n- **非线性方程求解器**（牛顿/割线/Brent）：求解自洽能隙方程\n  - 参考：SciPy `root/fsolve`、MATLAB `fsolve`、Julia `NLsolve`\n- **数据处理与绘图软件**：生成 $S_s(T)$、$C_s(T)$ 曲线与 $\\Delta C/C$ 读取",
+      "key_parameters": "- **能量积分上限 $E_{\\max}$**：理论 $[0,\\infty)$；数值 $E_{\\max}\\ge 20\\,k_B T_{\\min}$，对最低温 $T_{\\min}$ 令 $f_{FD}(E_{\\max},T_{\\min})\\ll 1$\n- **自洽截断 $E_0$**：与弱耦合模型一致，倍增扫描（$E_0\\to 2E_0$）验证 $\\Delta(T)$ 与 $C_s(T)$ 变化可忽略\n- **能量网格**：低温 $E\\sim k_B T$ 附近加密（对数/自适应），检查 $C_s(T)$ 网格收敛\n- **角向平均**（各向异性/节点）：节点附近加密采样（分层/重要性采样），以稳定 $N(E)$ 低能幂律验证式 (6)\n- **归一化 $\\gamma_{ST}$**：明确来源（实验正常态拟合或模型计算），报告单位与规范（是否含自旋简并）",
+      "common_pitfalls": "- **忽略 $N(E)$ 数值噪声/非物理解**：低温 $S_s$ 对 $N(E\\approx 0)$ 极敏感，微小噪声放大到 $C_s$ 振荡 → 对 $N(E)$ 做非负/平滑约束+网格收敛+保形插值\n- **能量积分截断不足**：$E_{\\max}$ 太小 → $S_s$ 低估、$C_s$ 系统性偏差 → 按 $E_{\\max}\\ge 20\\,k_B T_{\\min}$ 设定并做收敛测试\n- **自洽截断与热力学积分尺度不一致**：很小的 $E_0$ 得 $\\Delta(T)$ 导致与实验不符的 $T_c$ 与 $\\Delta C$ → 扫描 $E_0$ 联合检查 $T_c$、$\\Delta(0)$、$\\Delta C/C$ 稳定性\n- **简并因子与 $N(E)$ 定义不匹配**：前因子 $4$ 依赖自旋简并与能量对称性 → 固定约定并据此调整前因子",
+      "case_study": "以 ref6 的两种相（A/B）角向形式因子 $f$ 为输入，数值积分得 $S_s(T)$，求导得 $C_s(T)$，在 $T_c$ 处读取 $\\Delta C/C$，低温端检验点节点幂律 $C_s\\propto T^2$。"
+    },
+    {
+      "id": "step_thermo",
+      "name": "构建热力学势/熵",
+      "description": "从统计物理出发，将微观输入（准粒子 DOS $N(E)$、能谱 $E_k$、配分函数或 Fermi 分布）转换为可与实验直接对比的热力学量，核心产物为超导态熵 $S(T)$。",
+      "substeps": [
+        {
+          "name": "由准粒子 DOS 构建熵与比热",
+          "description": "弱耦合准粒子图像下，给定 $N(E)$ 与 $f_{FD}$，由 $S_s(T)=-4\\int_0^\\infty dE\\,N(E)[f_{FD}\\ln f_{FD}+(1-f_{FD})\\ln(1-f_{FD})]$ 式 (9) 得熵，再由 $C_s(T)=T\\partial S_s/\\partial T$ 式 (10) 得比热。以 $\\gamma_{ST}$ 归一化并在 $T_c$ 处读取 $\\Delta C$ 式 (11)。"
+        },
+        {
+          "name": "低温渐近与节点约束",
+          "description": "若能隙点节点导致 $N(E)\\propto E$（$E\\to0$）式 (12)，$C_s(T)\\propto T^2$（$T\\ll T_c$）式 (13)，用作能隙节点各向异性特征的判据。"
+        },
+        {
+          "name": "与能隙自洽求解的耦合",
+          "description": "$N(E)$ 由弱耦合自洽能隙方程支撑，$\\Delta(\\hat{k},T)=\\Delta(T)f(\\hat{k})$ 式 (14)，施加能量截断 $E_0$，$E_k=\\sqrt{\\xi_k^2+|\\Delta(\\hat{k},T)|^2}$，闭环生成 $S_s$ 与 $C_s$。"
+        }
+      ],
+      "method_ids": [
+        "method_dos_entropy",
+        "method_selfconsistent_gap"
+      ],
+      "paper_ref_ids": [
+        "ref6"
+      ],
+      "recommended_tools": "- **数值积分工具**：计算 $\\int_0^\\infty dE$ 能量积分+温度扫描，需自适应积分或高密度网格处理低温 $f_{FD}$ 陡峭变化\n  - 参考：SciPy `quad/quadpack`、MATLAB `integral`、Julia `QuadGK`\n- **非线性方程求解器**：自洽求解 $\\Delta(T)$ 并生成与 $f$ 一致的 $N(E)$",
+      "key_parameters": "- **$E_{\\max}$**：$E_{\\max}\\ge 20\\,k_B T_{\\max}$；高能 $N(E)$ 有结构增至 $50\\,k_B T_{\\max}$，$S_s$ 相对变化 $<10^{-4}$ 收敛\n- **温度微分求 $C_s$**：中心差分 $\\frac{S(T+\\delta T)-S(T-\\delta T)}{2\\delta T}$，$\\delta T/T\\sim10^{-3}\\text{–}10^{-2}$\n- **$E_0$**：模型超参数，与 $T_c$、$\\Delta(0)$ 拟合联合标定，检查 $E_0$ 改变时幂律稳健性\n- **$\\gamma_{ST}$**：优先采用同一样品同一拟合窗口的正常态 $\\gamma$，避免背景扣除不一致",
+      "common_pitfalls": "- **前因子与 $N(E)$ 约定不一致** → 用正常态极限 $C_n=\\gamma T$ 校验整体因子\n- **$[0,\\infty)$ 粗暴截断** → $S(T)$ 偏小，用 $E_{\\max}$ 扫描收敛测试\n- **数值求导放大噪声** → 先平滑/样条拟合再求导，或 $\\partial f_{FD}/\\partial T$ 解析代入\n- **低温积分分辨率不足** → 对数网格/分段积分，以幂律稳定性为判据",
+      "case_study": "基于 ref6 流程复现：输入 A/B 两相 $f$ 与相应 $N(E)$，给定 $\\gamma_{ST}$，计算 $S_s(T)\\to C_s(T)$，输出 $C_s/\\gamma_{ST}$ 曲线，读 $\\Delta C/C$，低温验证 $C_s\\propto T^2$。"
+    },
+    {
+      "id": "step_deriv",
+      "name": "热力学求导得比热",
+      "description": "从热力学势或熵的温度导数出发，得到超导态比热曲线 $C(T)$。等价路径：$C=T dS/dT=-T d^2F/dT^2=dU/dT$。若 $\\Delta(T)$ 或 $\\mu(T)$ 显式依赖温度，含链式法则项 $\\frac{dS}{dT}=(\\frac{\\partial S}{\\partial T})_{\\Delta,\\mu}+(\\frac{\\partial S}{\\partial\\Delta})_{T,\\mu}\\frac{d\\Delta}{dT}+(\\frac{\\partial S}{\\partial\\mu})_{T,\\Delta}\\frac{d\\mu}{dT}$ 式 (16)，弱耦合自洽场景下对数值 $S(T)$ 直接求导隐式纳入。",
+      "substeps": [
+        {
+          "name": "基于准粒子 DOS 的熵积分与比热求导",
+          "description": "$S_s(T)=-4\\int_0^\\infty dE\\,N(E)[f_{FD}\\ln f_{FD}+(1-f_{FD})\\ln(1-f_{FD})]$ 式 (18)，$C_s(T)=T\\partial S_s/\\partial T$ 式 (19)，$\\gamma_{ST}$ 归一化，$T_c$ 处跃迁 $\\frac{\\Delta C}{C}=\\frac{C_s(T_c^-)-C_n(T_c^+)}{C_n(T_c^+)}$ 式 (20)。"
+        },
+        {
+          "name": "低温渐近与节点信息",
+          "description": "点节点各向异性能隙 → 低能 $N(E)$ 特定幂律 → $C_s(T)\\propto T^2$（$T\\ll T_c$）式 (21)，作为自洽检查与物理判据。线节点/全能隙区分需结合维度与散射模型。"
+        },
+        {
+          "name": "与自洽能隙求解的接口",
+          "description": "$N(E)$ 由 $\\Delta(T)$、$f(\\hat{k})$、散射/能带参数决定，一旦 $N(E;T)$ 给定即可通过式 (18)–(20) 生成 $C(T)$。"
+        }
+      ],
+      "method_ids": [
+        "method_numerical_diff",
+        "method_dos_entropy"
+      ],
+      "paper_ref_ids": [
+        "ref6"
+      ],
+      "recommended_tools": "- **数值积分** $\\int_0^\\infty dE$：自适应 Gauss–Kronrod / 高精度 Simpson，显式检查截断收敛性\n- **数值求解器（自洽方程）**：求解 $\\Delta(T)$ 并生成 $N(E)$\n- **数值微分**：中心差分配合平滑/样条抑制噪声放大\n  - 替代：解析求导（$\\partial f_{FD}/\\partial T$ 带入）",
+      "key_parameters": "- **$E_{\\max}$**：$(20\\text{–}50)\\,k_B T_{\\max}$，$N(E)$ 高能有结构或引入 $E_0$ 时额外做递增收敛\n- **自洽 $E_0$**：与配对相互作用能标一致，测试 $T_c$ 与 $\\Delta(0)$ 对 $E_0$ 敏感性\n- **温度网格 $\\{T_i\\}$**：$T_c$ 附近加密（$T/T_c\\in[0.8,1.0]$ 小步长），低温足够密分辨幂律\n- **平滑与噪声控制**：样条/局部回归，评估平滑强度对 $\\Delta C$ 与幂律的不确定度",
+      "common_pitfalls": "- **差分放大 $S_s$ 噪声 → $C_s$ 非物理振荡**\n  - 对策 A：$S_s(T)$ 样条平滑再求导\n  - 对策 B：解析求导 $\\partial f_{FD}/\\partial T$ 直接代入\n  - 对策 C：报告 $\\delta T$ 对 $\\Delta C$ 影响\n- **$T_c$ 邻域步长过疏** → 跃迁读数不稳\n- **$N(E)$ 数值噪声未经平滑直接求导** → 虚假特征",
+      "case_study": "以 ref6 的 $N(E)$ 与 $\\gamma_{ST}$ 为输入，数值积分得 $S_s(T)$，求导得 $C_s(T)/\\gamma_{ST}$ 曲线，在 $T_c$ 处读 $\\Delta C/C$，低温端验证点节点 $C_s\\propto T^2$。"
+    },
+    {
+      "id": "step_limit",
+      "name": "极限评估与特征量提取",
+      "description": "在给定序参量结构（如点节点各向异性能隙）或自洽方程得到的 $\\Delta(T)$ 支撑下，基于准粒子 DOS $N(E)$ 进行数值评估与极限展开：提取低温幂律、$T_c$ 处比热跳变 $\\Delta C$、以及磁场/杂质标度关系。",
+      "method_ids": [
+        "method_low_T_asymptotic",
+        "method_numerical_diff"
+      ],
+      "paper_ref_ids": [
+        "ref6",
+        "ref11",
+        "ref16",
+        "ref2"
+      ],
+      "substeps": [
+        {
+          "name": "以 DOS 为输入的熵–比热数值框架",
+          "description": "$f_{FD}(E,T)=1/(e^{E/k_B T}+1)$ 式 (22)，$S_s(T)=-4\\int_0^\\infty dE\\,N(E)[f_{FD}\\ln f_{FD}+(1-f_{FD})\\ln(1-f_{FD})]$ 式 (23)，$C_s(T)=T\\partial S_s/\\partial T$ 式 (24)。归一化 $C_s/(\\gamma_{ST} T)$ 或 $C_s/\\gamma_{ST}$ 式 (25)，$T_c$ 处 $\\Delta C\\equiv C_s(T_c^-)-C_n(T_c^+)$ 式 (26)。"
+        },
+        {
+          "name": "低温极限：点节点幂律",
+          "description": "点节点 $N(E)\\propto E^2$（$E\\ll\\Delta_0$）式 (27) → $C_s(T)\\propto T^2$（$T\\ll T_c$）式 (28)。区分点节点 $T^2$、线节点 $T$、全能隙 $e^{-\\Delta/T}$。"
+        },
+        {
+          "name": "杂质与磁场分段标度",
+          "description": "引入 $\\gamma_0$ 与 $E_H$ 后分段：$T\\ll\\max(\\gamma_0,E_H)\\ll\\Delta_0$ 时 $C(T,H)\\simeq\\frac{\\pi^2}{3}N(0;H)T$ 式 (30)（类金属线性），$\\gamma_{\\rm el}=\\frac{\\pi^2}{3}N(0;H)$；$\\gamma_0,E_H\\ll T\\ll\\Delta_0$ 时 $C(T,H)\\simeq N_0\\frac{9\\zeta(3)}{2}T^2$ 式 (31)（节点幂律）。"
+        }
+      ],
+      "recommended_tools": "- **数值积分与数值求解器**：计算 $\\Delta(T)$、$S_s(T)$、$C_s(T)$ 曲线并提取 $\\Delta C$\n- **自洽迭代模块**：弱耦合能隙方程，输入 $E_0$ 与 $f(\\hat{k})$，输出 $\\Delta(T)$\n- **温度扫描与插值工具**：$T_c$ 附近细化步长稳定读取跃迁\n- **分段拟合工具**：多温区联合分析",
+      "key_parameters": "- **$E_0$**：$E_0\\gg\\Delta_0$，做 $E_0$ 扫描以 $\\Delta(T)$、$\\Delta C$ 收敛为准\n- **能量网格 $\\{E_i\\}$**：低能端加密解析 $N(E)\\propto E^2$，高能端覆盖至若干倍 $k_B T_c$ 或至 $E_0$\n- **温度步长 $\\Delta T$**：$T\\ll T_c$ 对数步长捕捉幂律区间；$T\\approx T_c$ 更细线性步长减少数值微分误差\n- **$\\gamma_{ST}$**：与正常态 $C_n/T$ 一致，包含背景项时声明是否并入或扣除\n- **能标分离**：确保 $T\\ll\\Delta_0$、$\\gamma_0,E_H\\ll T$ 等假设成立",
+      "common_pitfalls": "- **$T_c$ 邻域步长过疏** → $C_n(T_c^+)$ 估计偏差，$\\Delta C$ 误差被放大\n- **低温诊断图忽略对数刻度** → 掩盖幂律特征\n- **$\\gamma_{ST}$ 与样品/拟合窗口不一致** → 跨曲线可比性差\n- **忽略维度与散射模型耦合** → 不同节点类型混淆",
+      "case_study": "以 ref6 的 $N(E)$ 与 $f(\\hat{k})$（A/B 相）为输入，数值积分 $S_s(T)\\to C_s(T)$ 全曲线，$T_c$ 处读 $\\Delta C$ 归一化量，低温端推 $C_s\\propto T^2$ 幂律判据。"
+    }
+  ],
+  "tools": [],
+  "methods": [
+    {
+      "id": "method_bcs_mft",
+      "name": "BCS 平均场直接求和/积分",
+      "description": "从弱耦合 BCS 平均场哈密顿量出发，由 $E_k = \\sqrt{\\xi_k^2 + |\\Delta(\\hat{k},T)|^2}$ 构造准粒子谱，再对动量/能量直接求和积分得到 $N(E)$ 与自由能。",
+      "paper_ref_ids": [
+        "ref6",
+        "ref15",
+        "ref17"
+      ],
+      "assumptions": "- 弱耦合\n- 单带主导\n- Fermi 面良好定义",
+      "applicability": "- 均匀体系\n- 平移不变\n- 各向异性/节点通过 $f(\\hat{k})$ 纳入",
+      "relationship": "- 与 `method_bdg` 同根：BdG 在实空间/有限体系显式求解\n- 与 `method_quasiclassical` 互补：平均场保留全能带信息，准经典在 $k_F\\xi_0\\gg1$ 极限下约化维度"
+    },
+    {
+      "id": "method_bdg",
+      "name": "Bogoliubov-de Gennes 谱",
+      "description": "在实空间或有限系统求解 BdG 方程获取准粒子谱，适合处理空间非均匀性（涡旋、杂质束缚态、界面）。",
+      "paper_ref_ids": [
+        "ref5"
+      ],
+      "assumptions": "- 平均场配对 $\\Delta(\\mathbf{r})$ 给定或自洽\n- 单粒子哈密顿量已知",
+      "applicability": "- 涡旋态\n- 杂质束缚态\n- 界面/ Josephson 结\n- 有限尺寸体系",
+      "relationship": "- 比 `method_bcs_mft` 更通用但数值代价更大\n- 通常需迭代自洽，可与 `method_selfconsistent_gap` 联用"
+    },
+    {
+      "id": "method_greens",
+      "name": "格林函数路线",
+      "description": "用 Nambu 格林函数 $G(\\mathbf{k}, i\\omega_n)$ 直接给出谱函数与 DOS，可系统纳入自能修正（杂质、电声、自旋涨落）。",
+      "paper_ref_ids": [
+        "ref2",
+        "ref3",
+        "ref10"
+      ],
+      "assumptions": "- 微扰展开可控\n- Matsubara 形式与有限温度热力学天然兼容",
+      "applicability": "- 多带体系\n- 杂质散射\n- 强耦合修正\n- 自旋涨落介导配对",
+      "relationship": "- 弱耦合极限下与 `method_bcs_mft` 等价\n- 相比 `method_quasiclassical` 保留能量尺度全信息"
+    },
+    {
+      "id": "method_quasiclassical",
+      "name": "准经典理论（Eilenberger/LO）",
+      "description": "在 $k_F\\xi_0 \\gg 1$ 准经典极限下对 Fermi 面附近积分得 Eilenberger/Larkin-Ovchinnikov 方程，用准经典 Green 函数 $\\hat{g}(\\hat{k},\\mathbf{r};\\varepsilon)$。",
+      "paper_ref_ids": [
+        "ref11",
+        "ref13"
+      ],
+      "assumptions": "- $k_F\\xi_0 \\gg 1$\n- 配对尺度远小于 Fermi 能",
+      "applicability": "- 涡旋态\n- 非均匀超流\n- 杂质散射平均\n- 不适合多带高能物理主导场景",
+      "relationship": "- 比 `method_bdg` 维度低、数值更轻\n- 丢失带内高能结构\n- 可与 `method_greens` 互相校验"
+    },
+    {
+      "id": "method_free_energy_functional",
+      "name": "自由能泛函/有效场论",
+      "description": "以自由能泛函 $F[\\Delta]$ 或 Ginzburg-Landau/有效场论为中心，通过 $C = -T\\,d^2F/dT^2$ 直接得比热。",
+      "paper_ref_ids": [
+        "ref16",
+        "ref7"
+      ],
+      "assumptions": "- 相变附近普适行为\n- 多分量序参量可描述",
+      "applicability": "- $d_{x^2-y^2}+id_{xy}$ 混合态\n- 多相变分析\n- 有效场论体系",
+      "relationship": "- 与 $S$ 或 $U$ 求导路线等价，参数化不同\n- 泛函系数承载能隙角向结构与耦合强度信息"
+    },
+    {
+      "id": "method_selfconsistent_gap",
+      "name": "弱耦合自洽能隙求解",
+      "description": "在给定 $\\lambda$、$E_0$、$f(\\hat{k})$ 下迭代求解 $\\Delta(T)$ 满足 $\\Delta = \\lambda\\int d\\xi\\,\\langle K(\\xi, \\Delta f, T)\\rangle_{\\hat{k}}$。几乎所有其他方法的前置步骤。",
+      "paper_ref_ids": [
+        "ref6",
+        "ref12",
+        "ref4"
+      ],
+      "assumptions": "- 弱耦合\n- 有效作用域由 $E_0$ 划定\n- 核函数 $K$ 由所选理论决定",
+      "applicability": "- BCS/BdG/格林函数/准经典等各路线的共同前置\n- 杂质通过 pair-breaking 项在 $K$ 中纳入",
+      "relationship": "- 为 `method_dos_entropy` 提供 $N(E)$ 输入\n- 是与 $T_c$ 公式 $T_c=1.136\\,E_0 e^{-1/\\lambda}$ 对应的自洽解"
+    },
+    {
+      "id": "method_dos_entropy",
+      "name": "DOS 熵积分",
+      "description": "由 $N(E)$ 与 $f_{FD}$ 构造超导态熵 $S_s(T) = -4\\int_0^\\infty dE\\,N(E)[f_{FD}\\ln f_{FD}+(1-f_{FD})\\ln(1-f_{FD})]$ 的统一起点。",
+      "paper_ref_ids": [
+        "ref6"
+      ],
+      "assumptions": "- 前因子 $4$ 吸收自旋简并与正负能量对称性计数",
+      "applicability": "- 任何能给出 $N(E)$ 的场景（BCS 自洽、格林函数、准经典、经验拟合）\n- 与 `method_numerical_diff` 配套",
+      "relationship": "- 不关心 $N(E)$ 的来源\n- 用正常态极限 $C_n=\\gamma T$ 校验前因子一致性"
+    },
+    {
+      "id": "method_low_T_asymptotic",
+      "name": "低温渐近与节点判据",
+      "description": "利用低能 $N(E)$ 幂律推导 $C_s(T)$ 低温标度：点节点 $N(E)\\propto E^2 \\to C_s\\propto T^2$；线节点 $N(E)\\propto E$；全能隙 $\\sim e^{-\\Delta/T}$。作为配对对称性与能隙拓扑的判据。",
+      "paper_ref_ids": [
+        "ref6",
+        "ref11"
+      ],
+      "assumptions": "- $T \\ll T_c$ 低温极限\n- 低能 $N(E)$ 的幂律/指数行为成立",
+      "applicability": "- 反推节点结构\n- 区分点/线/全能隙\n- 杂质 $\\gamma_0$ 与磁场 $E_H$ 的分段标度分析",
+      "relationship": "- 与 `method_dos_entropy` 的低能展开直接关联\n- 判据需结合具体维度+散射模型"
+    },
+    {
+      "id": "method_numerical_diff",
+      "name": "数值微分求 C(T)",
+      "description": "由离散 $S_s(T)$ 网格用中心差分 $C_s(T)=T\\,dS_s/dT$ 的数值实现，与 `method_dos_entropy` 配套。",
+      "paper_ref_ids": [
+        "ref6"
+      ],
+      "assumptions": "- 温度网格足够密且分布合理",
+      "applicability": "- $\\delta T/T\\sim10^{-3}\\text{–}10^{-2}$\n- 替代方案：样条平滑后求导，或 $\\partial f_{FD}/\\partial T$ 解析代入",
+      "relationship": "- 直接依赖 `method_dos_entropy` 输出的 $S_s(T)$\n- 数值噪声控制方案与 `step_deriv` 的 `common_pitfalls` 对应"
+    }
+  ],
+  "data": [],
+  "paper_refs": [
+    {
+      "id": "ref1",
+      "citation": "Los Angeles, CA90089-0484, USA. Impurity Scattering in f-wave Superconductor UPt3.",
+      "description": "cluster 成员；正文未展开，估计支撑 f 波各向异性超导杂质散射相关讨论。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref2",
+      "citation": "V. G. Kogan, C. Martin, R. Prozorov. Superfluid density and specific heat within self-consistent scheme for two-band superconductor.",
+      "description": "cluster 成员；两带超导自洽方案，关联 method_greens 与 method_selfconsistent_gap；为杂质+磁场分段标度提供参考。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref3",
+      "citation": "Partha Goswami, Manju Rani, Avinashi Kapoor. Fermi pockets and quantum oscillations in specific heat of YBCO in the presence of disorder.",
+      "description": "cluster 成员；YBCO 杂质下的 Fermi 口袋与量子振荡，关联 method_greens。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref4",
+      "citation": "Qingshan Yuan, Hong-Yi Chen, H. Won, S. Lee, K. Maki, P. Thalmeier, C. S. Ting. Impurity effects on s+g-wave superconductivity in borocarbides Y(Lu)Ni2B2C.",
+      "description": "cluster 成员；s+g 波杂质效应，关联 method_selfconsistent_gap 的杂质 pair-breaking 扩展。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref5",
+      "citation": "Tatsuki Hashimoto, Keiji Yada, Ai Yamakage, Masatoshi Sato, Yukio Tanaka. Bulk Electronic State of Superconducting Topological Insulator.",
+      "description": "cluster 成员；拓扑超导体 bulk 电子态，关联 method_bdg。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref6",
+      "citation": "David Parker, Kazumi Maki, Stephan Haas. Anisotropic superconductivity in PrOs4Sb12.",
+      "description": "本综述的 foundational paper，正文大量直接引用。提供了以 DOS N(E) 与费米-狄拉克分布构造超导态熵 Ss(T) 与比热 Cs(T) 的核心流程（method_dos_entropy + method_numerical_diff），以及对 A/B 两相角向形式因子 f(k̂) 的自洽能隙求解路径（method_selfconsistent_gap）。量化结论 A 相 ΔC/C ≃ 0.93 与 B 相 ≃ 1.20 直接来自本文献。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref7",
+      "citation": "Giuseppe G.N. Angilella, Renato Pucci, Fabio Siringo. Sharp k-space features in the order parameter within the interlayer pair-tunneling mechanism of high-Tc superconductivity.",
+      "description": "cluster 成员；关联 method_free_energy_functional 与序参量 k 空间结构讨论。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref8",
+      "citation": "Departamento de Fisica, UFAM, Manaus, Brazil, 2012. Impurity effects on the d-density wave and superconductivity phase of cuprates.",
+      "description": "cluster 成员；铜氧化物 d 密度波与超导相的杂质效应。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref9",
+      "citation": "School of Physics, Georgia Institute of Technology, Atlanta. F-wave versus P-wave Superconductivity in Organic Conductors.",
+      "description": "cluster 成员；有机导体 f 波与 p 波比较。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref10",
+      "citation": "Qingshan Yuan, Xin-Zhong Yan, C. S. Ting. s-Wave-Like excitation in the superconducting state of electron-doped cuprates with d-wave pairing.",
+      "description": "cluster 成员；电子掺杂铜氧化物 d 波配对下的类 s 波激发，关联 method_greens。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref11",
+      "citation": "Department of Physics, University of Florida, Gainesville. Vortex Contribution to Specific Heat of Dirty d-Wave Superconductors: Breakdown of Scaling.",
+      "description": "cluster 成员；脏 d 波超导体涡旋对比热的贡献，关联 method_quasiclassical 与 step_limit 的磁场/杂质分段标度。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref12",
+      "citation": "V. Jovanović, R. Zikic, L. Dobrosavljević-Grujić. Pairing in planar organic superconductors. Physica C, 2005.",
+      "description": "cluster 成员；平面有机超导体配对，关联 method_selfconsistent_gap。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref13",
+      "citation": "Scaling relations in anisotropic superconductors with strong pair-breaking.",
+      "description": "cluster 成员；各向异性超导体强 pair-breaking 下的标度关系，关联 method_quasiclassical。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref14",
+      "citation": "YU Ya-bin, ZHANG Li-yuan, CHEN Chang-feng. Effective mass and specific heat in the periodic Anderson model with negative U centers. Physica C, 1988.",
+      "description": "cluster 成员；周期 Anderson 模型带负 U 中心的有效质量与比热。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref15",
+      "citation": "B. Uchoa, G. G. Cabrera, A. H. Castro Neto. Nodal liquid and s-wave superconductivity in transition metal dichalcogenides.",
+      "description": "cluster 成员；过渡金属 dichalcogenides 的 nodal liquid 与 s 波超导，关联 method_bcs_mft。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref16",
+      "citation": "Instituto de Física Teórica, Universidade Estadual Paulista. Phase transition from a dx²-y² to dx²-y² + idxy superconductor.",
+      "description": "cluster 成员；d 到 d+id 超导相变，关联 method_free_energy_functional 与结论 4（两次跳变、混合态无节点化）。",
+      "is_cluster_member": true
+    },
+    {
+      "id": "ref17",
+      "citation": "Department of Physics and Astronomy, University of Southern California, Los Angeles. Anisotropic s-wave superconductivity in MgB2.",
+      "description": "cluster 成员；MgB2 各向异性 s 波超导，关联 method_bcs_mft 的多带各向异性场景。",
+      "is_cluster_member": true
+    }
+  ]
+}

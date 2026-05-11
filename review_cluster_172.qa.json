@@ -1,0 +1,32 @@
+[
+  {
+    "q": "数值积分器在这个 workflow 里怎么用？",
+    "tags": ["step_input", "step_thermo", "step_deriv", "step_limit"],
+    "a": "贯穿全流程：step_input 做自洽能隙方程的能量积分 ∫₀^E0 dξ ⟨K⟩_k̂ 与角向平均；step_thermo 做熵积分 Ss = -4 ∫₀^∞ dE N(E) [fFD ln fFD + (1-fFD) ln(1-fFD)]；step_deriv 底层仍依赖它；step_limit 做 Tc 邻域与低温评估。建议自适应 Gauss-Kronrod 或高精度 Simpson；Emax ≥ 20 kB Tmin；低温 E ∼ kB T 加密。原文未报告具体软件，参考 SciPy quad、MATLAB integral、Julia QuadGK。"
+  },
+  {
+    "q": "研究超导比热的一般方法是什么？",
+    "tags": ["workflow"],
+    "a": "标准四阶段：(1) 构造谱/DOS/自由能输入——选 method_bcs_mft / method_bdg / method_greens / method_quasiclassical / method_free_energy_functional 其中一条理论框架，配合 method_selfconsistent_gap 求 Δ(T)；(2) 由 method_dos_entropy 构造熵 Ss(T)；(3) method_numerical_diff 数值求导得 Cs(T)；(4) 在低温/Tc/外场极限提取 ΔC、γST、幂律指数。分支选择主要取决于是否需要处理多带、各向异性、杂质、磁场或涡旋态。"
+  },
+  {
+    "q": "BCS 平均场和 BdG 相比各有什么优缺点？",
+    "tags": ["method_bcs_mft", "method_bdg"],
+    "a": "两者同根。BCS 平均场在动量空间直接求和/积分，假设平移不变，适合均匀体系与弱耦合；可保留全能带信息，数值轻。BdG 在实空间求解，能处理空间不均匀（涡旋、杂质束缚态、界面）、有限尺寸；代价是规模大、需迭代自洽。统一均匀体系选 BCS；涉及真实空间结构选 BdG。各向异性两者都通过角向因子 f(k̂) 纳入。"
+  },
+  {
+    "q": "数值微分求 Cs(T) 常见的坑有哪些？",
+    "tags": ["step_deriv", "method_numerical_diff"],
+    "a": "主要问题是差分直接放大 Ss(T) 的数值噪声产生非物理振荡。对策：(a) 中心差分 δT/T ∼ 10⁻³–10⁻² 并对不同 δT 做敏感性扫描；(b) 先对 Ss(T) 样条/局部回归平滑再求导；(c) 对积分表达式解析求导，把 ∂fFD/∂T 解析代入，完全绕开差分；(d) 温度网格在 Tc 附近加密以稳定跃迁读数，低温段足够密以分辨幂律。"
+  },
+  {
+    "q": "低温比热的幂律能告诉我什么？",
+    "tags": ["step_limit", "method_low_T_asymptotic"],
+    "a": "低温 Cs(T) 的标度直接反映能隙节点结构：点节点 → Cs ∝ T²（因 N(E) ∝ E²）；线节点 → Cs ∝ T²（与具体维度、散射模型耦合，解读需谨慎）；全能隙 → Cs ∝ e^(-Δ/T) 指数激活。杂质展宽 γ0 与磁场能标 EH 引入后出现分段：T ≪ max(γ0,EH) ≪ Δ0 时 C ≃ (π²/3) N(0;H) T（线性）；γ0, EH ≪ T ≪ Δ0 时 C ≃ N0 (9ζ(3)/2) T²。"
+  },
+  {
+    "q": "截断参数 E0 选错会有什么后果？",
+    "tags": ["step_input", "method_selfconsistent_gap"],
+    "a": "E0 是弱耦合自洽能隙方程的能量/频率截断，选错会带来三类问题：(1) Tc 与 Δ(0) 失真——Tc = 1.136 E0 e^(-1/λ) 对 E0 敏感；(2) 自洽截断尺度与后续热力学积分尺度不一致，使 ΔC 偏差；(3) 低温 Cs ∝ T² 幂律不稳。建议：对 E0 做倍增扫描（E0 → 2E0），观察 Δ(T)、Tc、ΔC 是否稳定；同时让迭代初值远离 Δ=0 平凡解避免落入非物理分支。"
+  }
+]
