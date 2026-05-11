@@ -1,0 +1,57 @@
+{
+  "workflow": {
+    "id": "string",
+    "name": "string",
+    "description": "string (markdown, overview of the entire workflow)",
+    "step_ids": ["string"],
+    "member_paper_ids": ["string"],
+    "conclusions": "string (markdown, overall take-aways, optional)",
+    "open_issues": "string (markdown, unresolved problems, optional)",
+    "claims": [
+      {
+        "id": "string (e.g. c1, c2)",
+        "text": "string (markdown with LaTeX)"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "string (e.g. step_input)",
+      "name": "string",
+      "description": "string (markdown, 1-2 sentence overview)",
+      "substeps": [
+        {
+          "name": "string (subsection title)",
+          "description": "string (markdown with LaTeX, detailed content)"
+        }
+      ],
+      "method_ids": ["string (refs to methods[].id)"],
+      "paper_ref_ids": ["string (refs to paper_refs[].id)"],
+      "recommended_tools": "string (markdown bullet list, step-level)",
+      "key_parameters": "string (markdown bullet list, step-level)",
+      "common_pitfalls": "string (markdown bullet list, step-level)",
+      "case_study": "string (markdown, step-level, optional)"
+    }
+  ],
+  "tools": [],
+  "methods": [
+    {
+      "id": "string (e.g. method_bcs_mft)",
+      "name": "string",
+      "description": "string (markdown, one-line summary)",
+      "assumptions": "string (markdown bullet list)",
+      "applicability": "string (markdown bullet list)",
+      "relationship": "string (markdown, relations to other methods)",
+      "paper_ref_ids": ["string (refs to paper_refs[].id)"]
+    }
+  ],
+  "data": [],
+  "paper_refs": [
+    {
+      "id": "string (e.g. ref1, ref6)",
+      "citation": "string (authors + title + venue/year)",
+      "description": "string (role in the review, specific contributions)",
+      "is_cluster_member": true
+    }
+  ]
+}
