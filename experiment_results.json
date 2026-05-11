@@ -1,0 +1,41 @@
+{
+  "workflow": "cluster_172",
+  "timestamp": "2026-05-11 23:15",
+  "parameters": {
+    "Tc_target_K": 1.85,
+    "phase_A": {
+      "lambda": 0.42,
+      "E0_eV": 0.0015177518352623356,
+      "f_sq_avg": 1.0
+    },
+    "phase_B": {
+      "lambda": 0.48,
+      "E0_eV": 0.0011270584945652143,
+      "f_sq_avg": 1.0
+    }
+  },
+  "results": [
+    {
+      "label": "Phase A",
+      "Tc_K": 1.8315000000000001,
+      "Delta0_meV": 0.2830904130264889,
+      "bcs_ratio": 3.587363175542512,
+      "gamma_eV_per_K2": 4.8860013740449617e-08,
+      "delta_C_over_C": 0.004334363164861798,
+      "low_T_exponent": NaN,
+      "low_T_R2": NaN,
+      "elapsed_s": 0.01425480842590332
+    },
+    {
+      "label": "Phase B",
+      "Tc_K": 1.8315000000000001,
+      "Delta0_meV": 0.28509018191867336,
+      "bcs_ratio": 3.612704539832184,
+      "gamma_eV_per_K2": 4.8860013740449617e-08,
+      "delta_C_over_C": 0.004524697392057948,
+      "low_T_exponent": NaN,
+      "low_T_R2": NaN,
+      "elapsed_s": 0.01156306266784668
+    }
+  ]
+}

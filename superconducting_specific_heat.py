@@ -49,9 +49,9 @@ def solve_gap_at_T(lam, E0, T, f_sq_avg=1.0,
 
     def gap_eq(Delta):
         if Delta <= 0:
-            return -1.0
+            return 10.0  # 远离 0，引导 root 找正解
         integral, _ = quad(lambda xi: bcs_gap_kernel(xi, Delta, T), 0, E0, limit=200)
-        return Delta - lam * f_sq_avg * integral
+        return 1.0 - lam * f_sq_avg * integral
 
     # 宽 bracket: [E0/1e6, E0]
     lo, hi = 1e-6 * E0, E0
@@ -171,12 +171,11 @@ def fermi_dirac(E, T):
 
 def entropy_from_dos(N_E_func, T, Emax, n_grid=8000):
     """
-    S_s(T) = -4 ∫₀^∞ dE N(E) [f ln f + (1-f) ln(1-f)].
+    S_s(T) = -4 kB ∫₀^∞ dE N(E) [f ln f + (1-f) ln(1-f)].
 
-    低温用对数网格解析近零能区域，高温用线性网格.
+    N(E) 应为总 DOS (含自旋简并), 单位 1/eV.
     """
     kBT = kB * T
-    # 自适应网格: 低温段解析 gap edge 附近
     E_low = np.logspace(-6, np.log10(10 * kBT + 1e-8), n_grid // 2)
     E_high = np.linspace(10 * kBT, Emax, n_grid // 2)
     E_grid = np.unique(np.concatenate([E_low, E_high]))
@@ -186,14 +185,12 @@ def entropy_from_dos(N_E_func, T, Emax, n_grid=8000):
     x = np.clip(x, -100, 100)
     f = 1.0 / (np.exp(x) + 1.0)
 
-    # 数值安全: log 避零
     integrand = np.zeros_like(E_grid)
     mask = (f > 1e-300) & (f < 1 - 1e-300)
     integrand[mask] = N_E[mask] * (
         f[mask] * np.log(f[mask]) + (1 - f[mask]) * np.log(1 - f[mask])
     )
-    S = -4.0 * simpson(integrand, E_grid)
-    return S
+    return -4.0 * kB * simpson(integrand, E_grid)
 
 
 def compute_entropy_curve(N_E_func, T_range, Emax, n_grid=3000):
@@ -259,46 +256,52 @@ def specific_heat_from_entropy(T_range, S_range, smooth=True, s_factor=None):
 
 def specific_heat_analytical(N_E_func, T, Emax, n_grid=3000):
     """
-    C(T) 的解析形式: C = T ∫₀^∞ dE N(E) (∂f/∂T).
-    用 ∂fFD/∂T 替代差分，避免数值噪声放大.
+    C(T) 的解析形式.
 
-    C(T) = 4/T ∫₀^∞ dE N(E) E² / [4 kB T² cosh²(E/(2 kB T))]
+    C_s(T) = 4/(k_B T²) ∫₀^∞ dE N(E) E² f(1-f)
+            = 4/(k_B T²) ∫₀^∞ dE N(E) E² / [4 cosh²(E/2k_B T)]
     """
-    E_low = np.logspace(-5, np.log10(10 * kB * T), n_grid // 2)
-    E_high = np.linspace(10 * kB * T, Emax, n_grid // 2)
+    kBT = kB * T
+    E_low = np.logspace(-5, np.log10(10 * kBT), n_grid // 2)
+    E_high = np.linspace(10 * kBT, Emax, n_grid // 2)
     E_grid = np.unique(np.concatenate([E_low, E_high]))
 
-    N_E = np.asarray(N_E_func(E_grid))
-    x = E_grid / (kB * T)
+    N_E = np.asarray(N_E_func(E_grid), dtype=float)
+    x = E_grid / kBT
     x = np.clip(x, -100, 100)
-    df_dT = E_grid / (4 * kB * T**2 * np.cosh(x / 2)**2)
-
-    integrand = N_E * df_dT
-    return 4.0 * T * simpson(integrand, E_grid)
+    f1mf = 1.0 / (4.0 * np.cosh(x / 2.0)**2)
+    integrand = N_E * E_grid**2 * f1mf
+    return 4.0 / (kB * T**2) * simpson(integrand, E_grid)
 
 
 # ============================================================
 # Step 4: 特征量提取
 # ============================================================
 
-def extract_delta_C(T_range, C_s, T_c, C_n_normalization=None):
+def compute_normal_gamma(N0, Emax, n_grid=3000):
+    """
+    自洽计算正常态 γ = C_n/T.
+
+    用 analytical formula 在 Δ=0 下计算, 确保与 C_s 用同一套约定.
+    理论上 C_n = γ T, γ = (π²/3) kB² N0.
+    """
+    # pick a T well above any Tc
+    T_ref = 5.0
+    dos_normal = lambda E: np.full_like(np.atleast_1d(E).astype(float), N0)
+    C_n = specific_heat_analytical(dos_normal, T_ref, Emax, n_grid=n_grid)
+    return C_n / T_ref
+
+
+def extract_delta_C(T_range, C_s, T_c, gamma):
     """
     提取 Tc 处比热跃迁.
 
-    ΔC / C = [C_s(Tc⁻) - C_n(Tc⁺)] / C_n(Tc⁺)
-
-    Parameters
-    ----------
-    C_n_normalization : float or None
-        γST 值用于 C_n(T) = γST * T.
+    ΔC / C_n = [C_s(Tc⁻) - γ·Tc] / (γ·Tc)
     """
-    # 找到 Tc 附近点
-    idx_below = np.searchsorted(T_range, T_c) - 1
-    idx_above = min(idx_below + 1, len(T_range) - 1)
-    idx_below = max(idx_below, 0)
-
-    Cs_Tc = C_s[idx_below]
-    Cn_Tc = C_n_normalization * T_c if C_n_normalization else C_s[idx_above]
+    idx = np.searchsorted(T_range, T_c)
+    idx = min(idx, len(T_range) - 1)
+    Cs_Tc = C_s[idx]
+    Cn_Tc = gamma * T_c
 
     delta_C = Cs_Tc - Cn_Tc
     delta_C_over_C = delta_C / Cn_Tc if Cn_Tc > 0 else 0.0
@@ -306,7 +309,8 @@ def extract_delta_C(T_range, C_s, T_c, C_n_normalization=None):
         'delta_C': delta_C,
         'delta_C_over_C': delta_C_over_C,
         'Cs_Tc': Cs_Tc,
-        'Cn_Tc': Cn_Tc
+        'Cn_Tc': Cn_Tc,
+        'gamma': gamma
     }
 
 
@@ -439,9 +443,9 @@ def run_workflow(lam, E0, T_range, N0=1.0, label='',
     # Numerical C (cross-check)
     C_numerical = specific_heat_from_entropy(T_range, S, smooth=True)
 
-    # Step 4: features
-    gamma_normal = N0 * (np.pi**2 / 3) * kB**2  # eV/K² per unit N0
-    delta_C_result = extract_delta_C(T_range, C_anal, Tc, gamma_normal)
+    # Step 4: features — self-consistent gamma
+    gamma = compute_normal_gamma(N0, Emax)
+    delta_C_result = extract_delta_C(T_range, C_anal, Tc, gamma)
     low_T_fit = fit_low_T_power_law(T_range, C_anal, Tc)
 
     return WorkflowResult(
@@ -618,7 +622,7 @@ if __name__ == '__main__':
     print("\n--- Impurity + Field piecewise scaling ---")
     Delta0_ref = result_A.Delta0 if result_A.Delta0 > 0 else 0.0003
     for T_test in [0.01, 0.1, 0.5]:
-        C_pred, regime = piecewise_scaling(T_test, gamma0=0.0002, EH=0.0003,
+        C_pred, regime = piecewise_scaling(T_test, gamma0=1e-5, EH=2e-5,
                                            Delta0=Delta0_ref)
         print(f"  T={T_test:.2f}K: C={C_pred:.4e}  regime={regime}")
 
